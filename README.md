@@ -49,6 +49,12 @@ cd ernie-agent/applications/erniebot_researcher
 ```
 pip install -r requirements.txt
 ```
+如果上面的命令失败，请运行下面的命令：
+
+```
+conda create -n researcher39 -y python=3.9 && conda activate researcher39
+pip install -r requirements.txt
+```
 
 > 第三步：运行
 
