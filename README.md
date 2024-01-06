@@ -52,6 +52,14 @@ pip install -r requirements.txt
 
 > 第三步：运行
 
+设置环境变量：
+
+```
+export EB_AGENT_ACCESS_TOKEN=<aistudio-access-token>
+export AISTUDIO_ACCESS_TOKEN=<aistudio-access-token>
+export EB_AGENT_LOGGING_LEVEL=INFO
+```
+
 Python脚本运行：
 
 ```
