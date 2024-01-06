@@ -58,7 +58,7 @@ pip install -r requirements.txt
 
 > 第三步：运行
 
-设置环境变量：
+首先需要在[AI Studio星河社区](https://aistudio.baidu.com/index)注册并登录账号，然后在AI Studio的[访问令牌页面](https://aistudio.baidu.com/index/accessToken)获取`Access Token`，最后设置环境变量:
 
 ```
 export EB_AGENT_ACCESS_TOKEN=<aistudio-access-token>
