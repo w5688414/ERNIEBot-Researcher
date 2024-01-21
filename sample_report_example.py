@@ -28,7 +28,7 @@ from erniebot_agent.retrieval import BaizhongSearch
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--api_type", type=str, default="aistudio")
-
+parser.add_argument("--data_path", type=str, default="abstract_corpus_baidu_openai.json")
 parser.add_argument(
     "--knowledge_base_name_full_text",
     type=str,
@@ -80,14 +80,14 @@ access_token = os.environ.get("EB_AGENT_ACCESS_TOKEN", None)
 def get_retrievers():
     if args.embedding_type == "openai_embedding":
         embeddings = OpenAIEmbeddings(deployment="text-embedding-ada")
-        paper_db = build_index(faiss_name=args.index_name_full_text, embeddings=embeddings)
-        abstract_db = build_index(faiss_name=args.index_name_abstract, embeddings=embeddings)
+        paper_db = build_index(faiss_name=args.index_name_full_text, path=args.data_path, embeddings=embeddings)
+        abstract_db = build_index(faiss_name=args.index_name_abstract, path=args.data_path, embeddings=embeddings)
         abstract_search = FaissSearch(abstract_db, embeddings=embeddings)
         retriever_search = FaissSearch(paper_db, embeddings=embeddings)
     elif args.embedding_type == "ernie_embedding":
         embeddings = ErnieEmbeddings(aistudio_access_token=access_token)
-        paper_db = build_index(faiss_name=args.index_name_full_text, embeddings=embeddings)
-        abstract_db = build_index(faiss_name=args.index_name_abstract, embeddings=embeddings)
+        paper_db = build_index(faiss_name=args.index_name_full_text, path=args.data_path, embeddings=embeddings)
+        abstract_db = build_index(faiss_name=args.index_name_abstract, path=args.data_path, embeddings=embeddings)
         abstract_search = FaissSearch(abstract_db, embeddings=embeddings)
         retriever_search = FaissSearch(paper_db, embeddings=embeddings)
     elif args.embedding_type == "baizhong":
