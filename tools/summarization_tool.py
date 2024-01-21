@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Type
+from typing import Any
 
 from langchain.chains.combine_documents import collapse_docs, split_list_of_docs
 from langchain.prompts import PromptTemplate
@@ -9,38 +9,28 @@ from langchain.schema import Document, StrOutputParser
 from langchain.schema.prompt_template import format_document
 from langchain.schema.runnable import RunnableParallel, RunnablePassthrough
 from langchain.text_splitter import SpacyTextSplitter
-from pydantic import Field
 
 from erniebot_agent.extensions.langchain.llms import ErnieBot
 from erniebot_agent.tools.base import Tool
-from erniebot_agent.tools.schema import ToolParameterView
 
 TOKEN_MAX_LENGTH = 4800
 
 
-class TextSummarizationToolInputView(ToolParameterView):
-    query: str = Field(description="Chunk of text to summarize")
-
-
-class TextSummarizationToolOutputView(ToolParameterView):
-    document: str = Field(description="content")
-
-
 class TextSummarizationTool(Tool):
     description: str = "text summarization tool"
-    input_type: Type[ToolParameterView] = TextSummarizationToolInputView
-    ouptut_type: Type[ToolParameterView] = TextSummarizationToolOutputView
 
     def map_reduce(self, question: str = ""):
         llm = ErnieBot()
         document_prompt = PromptTemplate.from_template("{page_content}")
         partial_format_document = partial(format_document, prompt=document_prompt)
         prompt = (
-            "根据给出的文本内容，简要回答以下问题："
+            "根据给出的文本内容，简要回答以下问题，"
+            + "请你记住不要胡编乱造，如果你认为你无法回答下面的问题，请你总结提供的文本内容即可，不要额外使用自己的知识库对内容进行胡编乱造，不可以胡说八道，数字和事实必须准确。\n\n"
+            + "问题："
             + question
-            + '—— 如果无法使用文本回答问题，请简要总结文本。"包括所有的事实信息、数字、统计数据等（如果有的话）。字数控制在350字以内。文本内容：\n\n{context}'
+            + '—— 如果无法使用文本回答问题，请简要总结文本，不要胡编乱造。"包括所有的事实信息、数字、统计数据等（如果有的话）。字数控制在350字以内。文本内容：\n\n{context}'
         )
-        map_chain = (
+        map_chain: Any = (
             {"context": partial_format_document}
             | PromptTemplate.from_template(prompt)
             | llm
@@ -54,7 +44,7 @@ class TextSummarizationTool(Tool):
         def format_docs(docs):
             return "\n\n".join(partial_format_document(doc) for doc in docs)
 
-        collapse_chain = (
+        collapse_chain: Any = (
             {"context": format_docs} | PromptTemplate.from_template(prompt) | llm | StrOutputParser()
         )
 
@@ -75,20 +65,23 @@ class TextSummarizationTool(Tool):
                 collapse_ct += 1
             return docs
 
-        reduce_chain = (
+        reduce_chain: Any = (
             {"context": format_docs}
-            | PromptTemplate.from_template("合并这些总结:\n\n{context}")
+            | PromptTemplate.from_template(
+                "请你基于提供的内容，合并这些总结，不要额外使用自己的知识库对内容进行胡编乱造，不可以胡说八道，数字和事实必须准确。:\n\n{context}"
+            )
             | llm
             | StrOutputParser()
         ).with_config(run_name="Reduce")
-        map_reduce = (map_as_doc_chain.map() | collapse | reduce_chain).with_config(run_name="Map reduce")
+        map_reduce = (map_as_doc_chain.map() | collapse | reduce_chain).with_config(  # type: ignore
+            run_name="Map reduce"
+        )  # type: ignore
         return map_reduce
 
     async def __call__(
         self,
         text: str,
         question: str,
-        **kwargs,
     ):
         if not text:
             return "Error: No text to summarize"

@@ -1,20 +1,22 @@
 from typing import Optional
 
-from erniebot_agent.agents.agent import Agent
+from erniebot_agent.memory import SystemMessage
 
 
-class UserProxyAgent(Agent):
+class UserProxyAgent:
     # refer to https://github.com/microsoft/autogen/blob/main/autogen/agentchat/user_proxy_agent.py
     DEFAULT_SYSTEM_MESSAGE = """你是一个有用的人工助手"""
 
     def __init__(
         self,
         name: str,
-        system_message: Optional[str] = None,
+        system_message: Optional[SystemMessage] = None,
         human_input_mode: Optional[str] = "ALWAYS",
     ):
         self.name = name
-        self.system_message = system_message or self.DEFAULT_SYSTEM_MESSAGE
+        self.system_message = (
+            system_message.content if system_message is not None else self.DEFAULT_SYSTEM_MESSAGE
+        )
         self.human_input_mode = human_input_mode
 
     async def _async_run(self, draft):

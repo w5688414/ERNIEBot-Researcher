@@ -1,6 +1,6 @@
 gradio
 jsonlines
-md2pdf
 langchain
-erniebot
-erniebot-agent
+scikit-learn
+markdown
+WeasyPrint==52.5

@@ -1,8 +1,10 @@
+import asyncio
 from typing import List, Optional
 
 from editor_actor_agent import EditorActorAgent
+from fact_check_agent import FactCheckerAgent
+from polish_agent import PolishAgent
 from ranking_agent import RankingAgent
-from render_agent import RenderAgent
 from research_agent import ResearchAgent
 from reviser_actor_agent import ReviserActorAgent
 from user_proxy_agent import UserProxyAgent
@@ -15,7 +17,8 @@ class ResearchTeam:
         ranker_actor: RankingAgent,
         editor_actor: EditorActorAgent,
         reviser_actor: ReviserActorAgent,
-        render_actor: Optional[RenderAgent] = None,
+        checker_actor: FactCheckerAgent,
+        polish_actor: Optional[PolishAgent] = None,
         user_agent: Optional[UserProxyAgent] = None,
         use_reflection: bool = False,
     ):
@@ -23,22 +26,16 @@ class ResearchTeam:
         self.editor_actor_instance = editor_actor
         self.revise_actor_instance = reviser_actor
         self.ranker_actor_instance = ranker_actor
-        self.render_actor_instance = render_actor
+        self.polish_actor_instance = polish_actor
+        self.checker_actor_instance = checker_actor
         self.user_agent = user_agent
-        self.render_actor = render_actor
+        self.polish_actor = polish_actor
         self.use_reflection = use_reflection
 
     async def run(self, query, iterations=3):
-        list_reports = []
-        for researcher in self.research_actor_instance:
-            report, meta_data, paragraphs = await researcher.run(query)
-            list_reports.append(
-                {
-                    "report": report,
-                    "meta_data": meta_data,
-                    "paragraphs": paragraphs,
-                }
-            )
+        tasks_researchers = [researcher.run(query) for researcher in self.research_actor_instance]
+        result_researchers = await asyncio.gather(*tasks_researchers)
+        list_reports = [{"report": result[0], "paragraphs": result[1]} for result in result_researchers]
         if self.user_agent is not None:
             prompt = (
                 f"请你从{list_reports}个待选的多个报告草稿中，选择一个合适的报告,"
@@ -83,10 +80,9 @@ class ResearchTeam:
                 immedia_report = list_reports[0]
 
             revised_report = immedia_report
-
-        revised_report, path = await self.render_actor_instance.run(
-            report=revised_report["report"],
-            meta_data=revised_report["meta_data"],
+        checked_report = await self.checker_actor_instance.run(report=revised_report["report"])
+        revised_report, path = await self.polish_actor_instance.run(
+            report=checked_report,
             summarize=revised_report["paragraphs"],
         )
         return revised_report, path

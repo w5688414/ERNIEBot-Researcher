@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from typing import Type
-
-from pydantic import Field
+import json
+from builtins import dict
+from typing import List
 
 from erniebot_agent.chat_models.erniebot import BaseERNIEBot
-from erniebot_agent.memory import HumanMessage
+from erniebot_agent.memory import HumanMessage, Message
 from erniebot_agent.prompt import PromptTemplate
 from erniebot_agent.tools.base import Tool
-from erniebot_agent.tools.schema import ToolParameterView
 
 from .utils import write_md_to_pdf
 
@@ -19,9 +18,11 @@ def generate_report_prompt(question, research_summary, outline=None):
             research_summary (str): The research summary to generate the report prompt for
     Returns: str: The report prompt for the given question and research summary
     """
+    if isinstance(outline, dict):
+        outline = json.dumps(outline, ensure_ascii=False)
     if outline is None:
         prompt = """你是任务是生成一份满足要求的报告，报告的格式必须是markdown格式，注意报告标题前面必须有'#'
-        现在给你一些信息，帮助你进行报告生成任务
+        现在给你一些信息，帮助你进行报告生成任务，你生成的报告必须基于给出的信息，不可以胡说八道，数字和事实必须准确。
         信息：{{information}}
         使用上述信息，详细报告回答以下问题或主题{{question}}
         -----
@@ -38,7 +39,7 @@ def generate_report_prompt(question, research_summary, outline=None):
         # remove spaces
         outline = outline.replace(" ", "")
         prompt = """你是任务是生成一份满足要求的报告，报告的格式必须是markdown格式，注意报告标题前面必须有'#'
-        现在给你一些信息，帮助你进行报告生成任务
+        现在给你一些信息，帮助你进行报告生成任务，你生成的报告必须基于给出的信息，不可以胡说八道，数字和事实必须准确。
         信息：{{information}}
         使用上述信息，根据设定好的大纲{{outline}}
         详细报告回答以下问题或主题{{question}}
@@ -81,13 +82,13 @@ def generate_outline_report_prompt(question, research_summary, **kwargs):
             research_summary (str): The research summary to generate the outline report prompt for
     Returns: str: The outline report prompt for the given question and research summary
     """
-    report_prompt = """{{information}}使用上述信息，为以下问题或主题：
+    prompt = """{{information}}使用上述信息，为以下问题或主题：
     "{{question}}". 生成一个Markdown语法的研究报告大纲。
     大纲应为研究报告提供一个良好的结构框架，包括主要部分、子部分和要涵盖的关键要点。
     研究报告应详细、信息丰富、深入，至少1,200字。使用适当的Markdown语法来格式化大纲，确保可读性。
     """
-    Report_prompt = PromptTemplate(report_prompt, input_variables=["information", "question"])
-    strs = Report_prompt.format(information=research_summary, question=question)
+    report_prompt = PromptTemplate(prompt, input_variables=["information", "question"])
+    strs = report_prompt.format(information=research_summary, question=question)
     return strs.replace(". ", ".")
 
 
@@ -103,19 +104,8 @@ def get_report_by_type(report_type):
 TOKEN_MAX_LENGTH = 8000
 
 
-# TOKEN_MAX_LENGTH = 4800
-class ReportWritingToolInputView(ToolParameterView):
-    query: str = Field(description="Chunk of text to summarize")
-
-
-class ReportWritingToolOutputView(ToolParameterView):
-    document: str = Field(description="content")
-
-
 class ReportWritingTool(Tool):
     description: str = "report writing tool"
-    input_type: Type[ToolParameterView] = ReportWritingToolInputView
-    ouptut_type: Type[ToolParameterView] = ReportWritingToolOutputView
 
     def __init__(self, llm: BaseERNIEBot, llm_long: BaseERNIEBot) -> None:
         super().__init__()
@@ -131,11 +121,10 @@ class ReportWritingTool(Tool):
         agent_name: str,
         dir_path: str,
         outline=None,
-        **kwargs,
     ):
         research_summary = research_summary[: TOKEN_MAX_LENGTH - 600]
         report_type_func = get_report_by_type(report_type)
-        messages = [HumanMessage(report_type_func(question, research_summary, outline))]
+        messages: List[Message] = [HumanMessage(report_type_func(question, research_summary, outline))]
         response = await self.llm_long.chat(messages, system=agent_role_prompt)
         final_report = response.content
         if final_report == "":

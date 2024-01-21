@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import json
 import logging
-from typing import Optional, Type
-
-from pydantic import Field
+from typing import List, Optional
 
 from erniebot_agent.chat_models.erniebot import BaseERNIEBot
-from erniebot_agent.memory import HumanMessage
+from erniebot_agent.memory import HumanMessage, Message
 from erniebot_agent.prompt import PromptTemplate
 from erniebot_agent.tools.base import Tool
-from erniebot_agent.tools.schema import ToolParameterView
+
+from .utils import JsonUtil
 
 logger = logging.getLogger(__name__)
 
@@ -55,18 +53,8 @@ def generate_search_queries_with_context_comprehensive(context, question):
     return prompt.format(context=str(context), question=question)
 
 
-class TaskPlanningToolInputView(ToolParameterView):
-    query: str = Field(description="Chunk of text to summarize")
-
-
-class TaskPlanningToolOutputView(ToolParameterView):
-    document: str = Field(description="content")
-
-
-class TaskPlanningTool(Tool):
+class TaskPlanningTool(Tool, JsonUtil):
     description: str = "query task planning tool"
-    input_type: Type[ToolParameterView] = TaskPlanningToolInputView
-    ouptut_type: Type[ToolParameterView] = TaskPlanningToolOutputView
 
     def __init__(self, llm: BaseERNIEBot) -> None:
         super().__init__()
@@ -78,34 +66,19 @@ class TaskPlanningTool(Tool):
         agent_role_prompt: str,
         context: Optional[str] = None,
         is_comprehensive: bool = False,
-        **kwargs,
     ):
         if not context:
-            messages = [HumanMessage(content=generate_search_queries_prompt(question))]
+            content = generate_search_queries_prompt(question)
+        elif not is_comprehensive:
+            content = generate_search_queries_with_context(context, question)
+        else:
+            content = generate_search_queries_with_context_comprehensive(context, question)
+        messages: List[Message] = [HumanMessage(content=content)]
+        try:
             response = await self.llm.chat(messages, system=agent_role_prompt, temperature=0.7)
             result = response.content
-        else:
-            try:
-                if not is_comprehensive:
-                    messages = [
-                        HumanMessage(content=generate_search_queries_with_context(context, question))
-                    ]
-                    response = await self.llm.chat(messages, system=agent_role_prompt, temperature=0.7)
-                    result = response.content
-                else:
-                    messages = [
-                        HumanMessage(
-                            content=generate_search_queries_with_context_comprehensive(context, question)
-                        )
-                    ]
-                    response = await self.llm.chat(messages, system=agent_role_prompt, temperature=0.7)
-                    result = response.content
-
-                start_idx = result.index("[")
-                end_idx = result.rindex("]")
-                result = result[start_idx : end_idx + 1]
-                plan = json.loads(result)
-            except Exception as e:
-                logger.error(e)
-                plan = []
+            plan = self.parse_json(result, "[", "]")
+        except Exception as e:
+            logger.error(e)
+            plan = []
         return plan

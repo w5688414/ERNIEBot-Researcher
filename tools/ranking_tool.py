@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import json
 import logging
-from typing import List, Type
-
-from pydantic import Field
+from typing import List
 
 from erniebot_agent.chat_models.erniebot import BaseERNIEBot
-from erniebot_agent.memory import HumanMessage
+from erniebot_agent.memory import HumanMessage, Message
 from erniebot_agent.prompt import PromptTemplate
 from erniebot_agent.tools.base import Tool
-from erniebot_agent.tools.schema import ToolParameterView
+
+from .utils import JsonUtil
 
 logger = logging.getLogger(__name__)
 MAX_RETRY = 10
@@ -19,7 +17,7 @@ TOKEN_MAX_LENGTH = 4200
 
 def rank_report_prompt(report, query):
     prompt = """现在给你1篇报告，现在你需要严格按照以下的标准，对这个报告进行打分，越符合标准得分越高，打分区间在0-10之间，
-    你输出的应该是一个json格式，json中的键值为"打分理由"和"报告总得分"，{'打分理由':...,'报告总得分':...}
+    你输出的应该是一个json格式，json中的键值为"reasons"和"total_score"，{"reasons":...,"total_score":...}
     对报告进行打分,打分标准如下：
     1.仔细检查报告格式，报告必须是完整的，包括标题、摘要、正文、参考文献等，完整性越高，得分越高，这一点最高给4分。
     3.仔细检查报告内容，报告内容与{{query}}问题相关性越高得分越高，这一点最高给4分。
@@ -33,22 +31,11 @@ def rank_report_prompt(report, query):
     1) 是否包含标题、摘要、正文、参考文献等，3) 内容与问题的相关性，4) 标题是否有"#"标注，5) 标题是否有中文符号。
     """
     prompt_socre = PromptTemplate(prompt, input_variables=["query", "content"])
-    strs = prompt_socre.format(content=report, query=query)
-    return strs
+    return prompt_socre.format(content=report, query=query)
 
 
-class TextRankingToolInputView(ToolParameterView):
-    query: str = Field(description="Chunk of text to ranking")
-
-
-class TextRankingToolOutputView(ToolParameterView):
-    document: str = Field(description="content")
-
-
-class TextRankingTool(Tool):
+class TextRankingTool(Tool, JsonUtil):
     description: str = "text ranking tool"
-    input_type: Type[ToolParameterView] = TextRankingToolInputView
-    ouptut_type: Type[ToolParameterView] = TextRankingToolOutputView
 
     def __init__(self, llm: BaseERNIEBot, llm_long: BaseERNIEBot) -> None:
         super().__init__()
@@ -69,7 +56,7 @@ class TextRankingTool(Tool):
                     content = rank_report_prompt(report=item["report"], query=query)
                 else:
                     content = rank_report_prompt(report=item, query=query)
-                messages = [HumanMessage(content)]
+                messages: List[Message] = [HumanMessage(content)]
                 retry_count = 0
                 while True:
                     try:
@@ -81,11 +68,8 @@ class TextRankingTool(Tool):
                                 temperature=1e-10,
                             )
                         result = response.content
-                        l_index = result.index("{")
-                        r_index = result.rindex("}")
-                        result = result[l_index : r_index + 1]
-                        result_dict = json.loads(result)
-                        socre = int(result_dict["报告总得分"])
+                        result_dict = self.parse_json(result)
+                        socre = int(result_dict["total_score"])
                         scores_all.append(socre)
                         break
                     except Exception as e:

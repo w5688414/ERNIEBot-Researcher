@@ -1,11 +1,8 @@
 import logging
-from typing import Optional
+from typing import Dict, Optional, Union
 
-from tools.utils import ReportCallbackHandler
+from tools.utils import JsonUtil, ReportCallbackHandler
 
-from erniebot_agent.agents.agent import Agent
-from erniebot_agent.agents.callback.callback_manager import CallbackManager
-from erniebot_agent.agents.schema import AgentResponse
 from erniebot_agent.chat_models.erniebot import BaseERNIEBot
 from erniebot_agent.memory import HumanMessage, SystemMessage
 from erniebot_agent.prompt.prompt_template import PromptTemplate
@@ -15,7 +12,7 @@ MAX_RETRY = 10
 TOKEN_MAX_LENGTH = 4200
 
 
-class ReviserActorAgent(Agent):
+class ReviserActorAgent(JsonUtil):
     DEFAULT_SYSTEM_MESSAGE = """你是一名专业作家。你已经受到编辑的指派，需要修订以下草稿，该草稿由一名非专家撰写。你可以选择是否遵循编辑的备注，视情况而定。
     使用中文输出，只允许对草稿进行局部修改，不允许对草稿进行胡编乱造。url链接需要保留，不应该改变"""
 
@@ -36,12 +33,15 @@ class ReviserActorAgent(Agent):
         self.template = "现在给你草稿的内容\n草稿：\n{{draft}}" + "\n请你按照编辑的备注来修改下面的草稿，现在给你编辑的备注：\n{{notes}}"
         self.prompt_template = PromptTemplate(template=self.template, input_variables=["draft", "notes"])
         if callbacks is None:
-            self._callback_manager = CallbackManager([ReportCallbackHandler()])
+            self._callback_manager = ReportCallbackHandler()
         else:
             self._callback_manager = callbacks
 
-    async def run(self, draft: str, notes: str) -> AgentResponse:
-        await self._callback_manager.on_run_start(agent=self, prompt=draft)
+    async def run(self, draft: Union[str, Dict], notes: str) -> str:
+        if isinstance(draft, dict):
+            await self._callback_manager.on_run_start(agent=self, prompt=draft["report"])
+        else:
+            await self._callback_manager.on_run_start(agent=self, prompt=draft)
         agent_resp = await self._run(draft, notes)
         await self._callback_manager.on_run_end(agent=self, response=agent_resp)
         return agent_resp

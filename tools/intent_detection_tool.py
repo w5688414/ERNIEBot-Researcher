@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import json
-from typing import Type
+from typing import List
 
-from pydantic import Field
+from tools.utils import JsonUtil
 
 from erniebot_agent.chat_models.erniebot import BaseERNIEBot
-from erniebot_agent.memory import HumanMessage
+from erniebot_agent.memory import HumanMessage, Message
 from erniebot_agent.prompt import PromptTemplate
 from erniebot_agent.tools.base import Tool
-from erniebot_agent.tools.schema import ToolParameterView
 
 
 def auto_agent_instructions():
@@ -41,31 +39,17 @@ def auto_agent_instructions():
     return PromptTemplate(agent_instructions, input_variables=["content"])
 
 
-class IntentDetectionToolInputView(ToolParameterView):
-    query: str = Field(description="Chunk of text to summarize")
-
-
-class IntentDetectionToolOutputView(ToolParameterView):
-    document: str = Field(description="content")
-
-
-class IntentDetectionTool(Tool):
+class IntentDetectionTool(Tool, JsonUtil):
     description: str = "query intent detection tool"
-    input_type: Type[ToolParameterView] = IntentDetectionToolInputView
-    ouptut_type: Type[ToolParameterView] = IntentDetectionToolOutputView
 
     def __init__(self, llm: BaseERNIEBot) -> None:
         super().__init__()
         self.llm = llm
+        self.prompt = auto_agent_instructions()
 
-    async def __call__(self, content: str, **kwargs):
-        prompt = auto_agent_instructions()
-        messages = [HumanMessage(prompt.format(content=content))]
+    async def __call__(self, content: str):
+        messages: List[Message] = [HumanMessage(self.prompt.format(content=content))]
         response = await self.llm.chat(messages=messages)
         result = response.content
-        # parse json object
-        start_idx = result.index("{")
-        end_idx = result.rindex("}")
-        result = result[start_idx : end_idx + 1]
-        result = json.loads(result)
+        result = self.parse_json(result)
         return result
