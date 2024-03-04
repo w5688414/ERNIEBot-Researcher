@@ -4,9 +4,14 @@ import hashlib
 import os
 import time
 
+from erniebot_agent.chat_models import ERNIEBot
+from erniebot_agent.extensions.langchain.embeddings import ErnieEmbeddings
+from erniebot_agent.memory import SystemMessage
+from erniebot_agent.retrieval import BaizhongSearch
+from langchain.embeddings.openai import OpenAIEmbeddings
+
 from editor_actor_agent import EditorActorAgent
 from fact_check_agent import FactCheckerAgent
-from langchain.embeddings.openai import OpenAIEmbeddings
 from polish_agent import PolishAgent
 from ranking_agent import RankingAgent
 from research_agent import ResearchAgent
@@ -21,14 +26,11 @@ from tools.summarization_tool import TextSummarizationTool
 from tools.task_planning_tool import TaskPlanningTool
 from tools.utils import FaissSearch, build_index
 
-from erniebot_agent.chat_models import ERNIEBot
-from erniebot_agent.extensions.langchain.embeddings import ErnieEmbeddings
-from erniebot_agent.memory import SystemMessage
-from erniebot_agent.retrieval import BaizhongSearch
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--api_type", type=str, default="aistudio")
-parser.add_argument("--data_path", type=str, default="abstract_corpus_baidu_openai.json")
+parser.add_argument(
+    "--data_path", type=str, default="abstract_corpus_baidu_openai.json"
+)
 parser.add_argument(
     "--knowledge_base_name_full_text",
     type=str,
@@ -36,7 +38,10 @@ parser.add_argument(
     help="The name of the full-text knowledge base(baizhong)",
 )
 parser.add_argument(
-    "--knowledge_base_name_abstract", type=str, default="", help="The name of the abstract base(baizhong)"
+    "--knowledge_base_name_abstract",
+    type=str,
+    default="",
+    help="The name of the abstract base(baizhong)",
 )
 parser.add_argument(
     "--knowledge_base_id_full_text",
@@ -45,19 +50,35 @@ parser.add_argument(
     help="The id of the full-text knowledge base(baizhong)",
 )
 parser.add_argument(
-    "--knowledge_base_id_abstract", type=str, default="", help="The id of the abstract base(baizhong)"
+    "--knowledge_base_id_abstract",
+    type=str,
+    default="",
+    help="The id of the abstract base(baizhong)",
 )
 parser.add_argument(
-    "--index_name_full_text", type=str, default="", help="The name of the full-text knowledge base(faiss)"
+    "--index_name_full_text",
+    type=str,
+    default="",
+    help="The name of the full-text knowledge base(faiss)",
 )
 parser.add_argument(
-    "--index_name_abstract", type=str, default="", help="The name of the abstract base(faiss)"
+    "--index_name_abstract",
+    type=str,
+    default="",
+    help="The name of the abstract base(faiss)",
 )
 parser.add_argument(
-    "--index_name_citation", type=str, default="citation_index", help="The name of the citation base(faiss)"
+    "--index_name_citation",
+    type=str,
+    default="citation_index",
+    help="The name of the citation base(faiss)",
 )
-parser.add_argument("--num_research_agent", type=int, default=2, help="The number of research agent")
-parser.add_argument("--save_path", type=str, default="./output/erniebot", help="The report save path")
+parser.add_argument(
+    "--num_research_agent", type=int, default=2, help="The number of research agent"
+)
+parser.add_argument(
+    "--save_path", type=str, default="./output/erniebot", help="The report save path"
+)
 parser.add_argument("--iterations", type=int, default=4, help="")
 parser.add_argument(
     "--report_type",
@@ -80,14 +101,30 @@ access_token = os.environ.get("EB_AGENT_ACCESS_TOKEN", None)
 def get_retrievers():
     if args.embedding_type == "openai_embedding":
         embeddings = OpenAIEmbeddings(deployment="text-embedding-ada")
-        paper_db = build_index(faiss_name=args.index_name_full_text, path=args.data_path, embeddings=embeddings)
-        abstract_db = build_index(faiss_name=args.index_name_abstract, path=args.data_path, embeddings=embeddings)
+        paper_db = build_index(
+            faiss_name=args.index_name_full_text,
+            path=args.data_path,
+            embeddings=embeddings,
+        )
+        abstract_db = build_index(
+            faiss_name=args.index_name_abstract,
+            path=args.data_path,
+            embeddings=embeddings,
+        )
         abstract_search = FaissSearch(abstract_db, embeddings=embeddings)
         retriever_search = FaissSearch(paper_db, embeddings=embeddings)
     elif args.embedding_type == "ernie_embedding":
         embeddings = ErnieEmbeddings(aistudio_access_token=access_token)
-        paper_db = build_index(faiss_name=args.index_name_full_text, path=args.data_path, embeddings=embeddings)
-        abstract_db = build_index(faiss_name=args.index_name_abstract, path=args.data_path, embeddings=embeddings)
+        paper_db = build_index(
+            faiss_name=args.index_name_full_text,
+            path=args.data_path,
+            embeddings=embeddings,
+        )
+        abstract_db = build_index(
+            faiss_name=args.index_name_abstract,
+            path=args.data_path,
+            embeddings=embeddings,
+        )
         abstract_search = FaissSearch(abstract_db, embeddings=embeddings)
         retriever_search = FaissSearch(paper_db, embeddings=embeddings)
     elif args.embedding_type == "baizhong":
@@ -102,7 +139,11 @@ def get_retrievers():
             knowledge_base_name=args.knowledge_base_name_abstract,
             knowledge_base_id=args.knowledge_base_id_abstract,
         )
-    return {"full_text": retriever_search, "abstract": abstract_search, "embeddings": embeddings}
+    return {
+        "full_text": retriever_search,
+        "abstract": abstract_search,
+        "embeddings": embeddings,
+    }
 
 
 def get_tools(llm, llm_long):
@@ -161,7 +202,9 @@ def get_agents(retriever_sets, tool_sets, llm, llm_long):
         dir_path=target_path,
         report_type=args.report_type,
     )
-    checker_actor = FactCheckerAgent(name="fact_check", llm=llm, retriever_db=retriever_sets["full_text"])
+    checker_actor = FactCheckerAgent(
+        name="fact_check", llm=llm, retriever_db=retriever_sets["full_text"]
+    )
     ranker_actor = RankingAgent(
         llm=llm,
         llm_long=llm_long,

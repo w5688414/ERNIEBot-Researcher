@@ -2,11 +2,11 @@ import logging
 import time
 from typing import List, Optional, Union
 
-from tools.utils import JsonUtil, ReportCallbackHandler
-
 from erniebot_agent.chat_models.erniebot import BaseERNIEBot
 from erniebot_agent.memory import HumanMessage, Message, SystemMessage
 from erniebot_agent.prompt import PromptTemplate
+
+from tools.utils import JsonUtil, ReportCallbackHandler
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,9 @@ class EditorActorAgent(JsonUtil):
     ):
         self.name = name
         self.system_message = (
-            system_message.content if system_message is not None else self.DEFAULT_SYSTEM_MESSAGE
+            system_message.content
+            if system_message is not None
+            else self.DEFAULT_SYSTEM_MESSAGE
         )
         self.llm = llm
         self.llm_long = llm_long
@@ -52,7 +54,9 @@ class EditorActorAgent(JsonUtil):
     async def run(self, report: Union[str, dict[str, str]]) -> dict:
         if isinstance(report, dict):
             report = report["report"]
-        await self._callback_manager.on_run_start(agent=self, agent_name=self.name, prompt=report)
+        await self._callback_manager.on_run_start(
+            agent=self, agent_name=self.name, prompt=report
+        )
         agent_resp = await self._run(report)
         await self._callback_manager.on_run_end(agent=self, response=agent_resp)
         return agent_resp
@@ -68,7 +72,9 @@ class EditorActorAgent(JsonUtil):
                 if len(content) < TOKEN_MAX_LENGTH:
                     response = await self.llm.chat(messages, system=self.system_message)
                 else:
-                    response = await self.llm_long.chat(messages, system=self.system_message)
+                    response = await self.llm_long.chat(
+                        messages, system=self.system_message
+                    )
                 res = response.content
 
                 try:
@@ -86,7 +92,9 @@ class EditorActorAgent(JsonUtil):
                 retry_count += 1
                 time.sleep(0.5)
                 if retry_count > MAX_RETRY:
-                    raise Exception(f"Failed to edit research for {report} after {MAX_RETRY} times.")
+                    raise Exception(
+                        f"Failed to edit research for {report} after {MAX_RETRY} times."
+                    )
                 continue
 
     async def json_correct(self, json_data):

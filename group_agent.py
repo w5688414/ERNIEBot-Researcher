@@ -3,15 +3,15 @@ import random
 import sys
 from typing import Any, Dict, List, Optional, Union
 
+from erniebot_agent.chat_models.erniebot import BaseERNIEBot
+from erniebot_agent.memory import AIMessage, HumanMessage
+
 from editor_actor_agent import EditorActorAgent
 from polish_agent import PolishAgent
 from ranking_agent import RankingAgent
 from research_agent import ResearchAgent
 from reviser_actor_agent import ReviserActorAgent
 from tools.utils import JsonUtil
-
-from erniebot_agent.chat_models.erniebot import BaseERNIEBot
-from erniebot_agent.memory import AIMessage, HumanMessage
 
 logger = logging.getLogger(__name__)
 _VALID_SPEAKER_SELECTION_METHODS = ["auto", "manual", "random", "round_robin"]
@@ -49,7 +49,9 @@ class GroupChat(JsonUtil):
 
     def next_agent(self, agent, agents):
         """Return the next agent in the list."""
-        idx = self.agent_names.index(agent.name) if agent.name in self.agent_names else -1
+        idx = (
+            self.agent_names.index(agent.name) if agent.name in self.agent_names else -1
+        )
         # Return the next agent
         if agents == self.agents:
             return agents[(idx + 1) % len(agents)]
@@ -70,7 +72,9 @@ class GroupChat(JsonUtil):
         strs = ""
         for i in agents:
             strs += i.name + ":" + i.system_message + "\n"
-        return f"阅读下面的对话。 从{[agent.name for agent in agents]} 中选择下一个角色来扮演。仅返回扮演的角色。" + strs
+        return (
+            f"阅读下面的对话。 从{[agent.name for agent in agents]} 中选择下一个角色来扮演。仅返回扮演的角色。" + strs
+        )
 
     def manual_select_speaker(self, agents):
         logger.info("请从以下列表中选择下一位Agent：")
@@ -99,7 +103,10 @@ class GroupChat(JsonUtil):
         return None
 
     def _prepare_and_select_agents(self, last_speaker):
-        if self.speaker_selection_method.lower() not in _VALID_SPEAKER_SELECTION_METHODS:
+        if (
+            self.speaker_selection_method.lower()
+            not in _VALID_SPEAKER_SELECTION_METHODS
+        ):
             raise ValueError(
                 f"GroupChat speaker_selection_method is set to '{self.speaker_selection_method}'. "
                 f"It should be one of {_VALID_SPEAKER_SELECTION_METHODS} (case insensitive). "
@@ -127,7 +134,9 @@ class GroupChat(JsonUtil):
         # remove the last speaker from the list to avoid selecting
         # the same speaker if allow_repeat_speaker is False
         agents = (
-            agents if self.allow_repeat_speaker else [agent for agent in agents if agent != last_speaker]
+            agents
+            if self.allow_repeat_speaker
+            else [agent for agent in agents if agent != last_speaker]
         )
 
         if self.speaker_selection_method.lower() == "manual":
@@ -146,7 +155,9 @@ class GroupChat(JsonUtil):
         if selected_agent:
             return selected_agent
         # auto speaker selection
-        respose = await self.llm_long.chat(messages=messages, system=self.select_speaker_prompt(agents))
+        respose = await self.llm_long.chat(
+            messages=messages, system=self.select_speaker_prompt(agents)
+        )
         if not respose:
             return self.next_agent(last_speaker, agents)
         # If exactly one agent is mentioned, use it. Otherwise, leave the OAI response unmodified
@@ -234,7 +245,9 @@ class GroupChatManager:
             if isinstance(speaker, EditorActorAgent):
                 respose = await speaker.run(report)
                 notes = respose.get("notes", "")
-                messages.append(AIMessage("调用" + speaker.name + "得到的结果为" + str(respose)))
+                messages.append(
+                    AIMessage("调用" + speaker.name + "得到的结果为" + str(respose))
+                )
             elif isinstance(speaker, ReviserActorAgent):
                 report_list.append(await speaker.run(report, notes))
                 report = report_list[-1]

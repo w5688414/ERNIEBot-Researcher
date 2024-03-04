@@ -5,8 +5,13 @@ import logging
 import os
 
 import gradio as gr
-from editor_actor_agent import EditorActorAgent
+from erniebot_agent.chat_models import ERNIEBot
+from erniebot_agent.extensions.langchain.embeddings import ErnieEmbeddings
+from erniebot_agent.memory import SystemMessage
+from erniebot_agent.retrieval import BaizhongSearch
 from langchain.embeddings.openai import OpenAIEmbeddings
+
+from editor_actor_agent import EditorActorAgent
 from ranking_agent import RankingAgent
 from render_agent import RenderAgent
 from research_agent import ResearchAgent
@@ -21,11 +26,6 @@ from tools.summarization_tool import TextSummarizationTool
 from tools.task_planning_tool import TaskPlanningTool
 from tools.utils import FaissSearch, build_index
 
-from erniebot_agent.chat_models import ERNIEBot
-from erniebot_agent.extensions.langchain.embeddings import ErnieEmbeddings
-from erniebot_agent.memory import SystemMessage
-from erniebot_agent.retrieval import BaizhongSearch
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--api_type", type=str, default="aistudio")
 
@@ -38,7 +38,9 @@ parser.add_argument("--faiss_name_paper", type=str, default="", help="")
 parser.add_argument("--faiss_name_abstract", type=str, default="", help="")
 parser.add_argument("--faiss_name_citation", type=str, default="", help="")
 
-parser.add_argument("--num_research_agent", type=int, default=2, help="The number of research agent")
+parser.add_argument(
+    "--num_research_agent", type=int, default=2, help="The number of research agent"
+)
 parser.add_argument("--iterations", type=int, default=4, help="")
 parser.add_argument(
     "--report_type",
@@ -72,13 +74,17 @@ def generate_report(query, history=[]):
     if args.embedding_type == "open_embedding":
         embeddings = OpenAIEmbeddings(deployment="text-embedding-ada")
         paper_db = build_index(faiss_name=args.faiss_name_paper, embeddings=embeddings)
-        abstract_db = build_index(faiss_name=args.faiss_name_abstract, embeddings=embeddings)
+        abstract_db = build_index(
+            faiss_name=args.faiss_name_abstract, embeddings=embeddings
+        )
         abstract_search = FaissSearch(abstract_db, embeddings=embeddings)
         retriever_search = FaissSearch(paper_db, embeddings=embeddings)
     elif args.embedding_type == "ernie_embedding":
         embeddings = ErnieEmbeddings(aistudio_access_token=access_token)
         paper_db = build_index(faiss_name=args.faiss_name_paper, embeddings=embeddings)
-        abstract_db = build_index(faiss_name=args.faiss_name_abstract, embeddings=embeddings)
+        abstract_db = build_index(
+            faiss_name=args.faiss_name_abstract, embeddings=embeddings
+        )
         abstract_search = FaissSearch(abstract_db, embeddings=embeddings)
         retriever_search = FaissSearch(paper_db, embeddings=embeddings)
     elif args.embedding_type == "baizhong":
@@ -103,7 +109,9 @@ def generate_report(query, history=[]):
     task_planning_tool = TaskPlanningTool(llm=llm)
     semantic_citation_tool = SemanticCitationTool()
     dir_path = f"./outputs/erniebot/{hashlib.sha1(query.encode()).hexdigest()}"
-    target_path = f"./outputsl/erniebot/{hashlib.sha1(query.encode()).hexdigest()}/revised"
+    target_path = (
+        f"./outputsl/erniebot/{hashlib.sha1(query.encode()).hexdigest()}/revised"
+    )
     os.makedirs(target_path, exist_ok=True)
     os.makedirs(dir_path, exist_ok=True)
     research_actor = []
@@ -127,7 +135,9 @@ def generate_report(query, history=[]):
         research_actor.append(research_agent)
     editor_actor = EditorActorAgent(name="editor", llm=llm, llm_long=llm_long)
     reviser_actor = ReviserActorAgent(name="reviser", llm=llm, llm_long=llm_long)
-    ranker_actor = RankingAgent(name="ranker", ranking_tool=ranking_tool, llm=llm, llm_long=llm_long)
+    ranker_actor = RankingAgent(
+        name="ranker", ranking_tool=ranking_tool, llm=llm, llm_long=llm_long
+    )
     render_actor = RenderAgent(
         name="render",
         llm=llm,
@@ -181,7 +191,9 @@ def launch_ui():
             with gr.Row():
                 submit = gr.Button("🚀 提交", variant="primary", scale=1)
                 clear = gr.Button("清除", variant="primary", scale=1)
-            submit.click(generate_report, inputs=[query_textbox], outputs=[report, report_url])
+            submit.click(
+                generate_report, inputs=[query_textbox], outputs=[report, report_url]
+            )
             clear.click(lambda _: ([None, None]), outputs=[report, report_url])
         recording = gr.Textbox(label="历史记录", max_lines=10)
         with gr.Row():

@@ -6,19 +6,18 @@ import urllib.parse
 from typing import Union
 
 import jsonlines
-from langchain.docstore.document import Document
-from langchain.document_loaders import PyPDFDirectoryLoader
-from langchain.text_splitter import SpacyTextSplitter
-from langchain.vectorstores import FAISS
-from md2pdf.core import md2pdf
-from sklearn.metrics.pairwise import cosine_similarity
-
 from erniebot_agent.agents.base import BaseAgent
 from erniebot_agent.agents.callback import LoggingHandler
 from erniebot_agent.agents.schema import ToolResponse
 from erniebot_agent.tools.base import BaseTool
 from erniebot_agent.utils.json import to_pretty_json
 from erniebot_agent.utils.output_style import ColoredContent
+from langchain.docstore.document import Document
+from langchain.document_loaders import PyPDFDirectoryLoader
+from langchain.text_splitter import SpacyTextSplitter
+from langchain.vectorstores import FAISS
+from md2pdf.core import md2pdf
+from sklearn.metrics.pairwise import cosine_similarity
 
 default_logger = logging.getLogger(__name__)
 
@@ -41,10 +40,16 @@ class ReportCallbackHandler(LoggingHandler):
     async def on_run_end(self, agent: BaseAgent, response, **kwargs):
         agent_name = kwargs.get("agent_name", None)
         self._agent_info(
-            "%s %s finished running.", agent.__class__.__name__, agent_name, subject="Run", state="End"
+            "%s %s finished running.",
+            agent.__class__.__name__,
+            agent_name,
+            subject="Run",
+            state="End",
         )
 
-    async def on_tool_start(self, agent: BaseAgent, tool: Union[BaseTool, str], input_args: str) -> None:
+    async def on_tool_start(
+        self, agent: BaseAgent, tool: Union[BaseTool, str], input_args: str
+    ) -> None:
         if isinstance(input_args, (dict, list, tuple)):
             js_inputs = json.dumps(input_args, ensure_ascii=False)
         elif isinstance(input_args, str):
@@ -114,7 +119,9 @@ class FaissSearch:
         return retrieval_results
 
 
-def build_index(faiss_name, embeddings, path=None, abstract=False, origin_data=None, use_data=False):
+def build_index(
+    faiss_name, embeddings, path=None, abstract=False, origin_data=None, use_data=False
+):
     if os.path.exists(faiss_name):
         db = FAISS.load_local(faiss_name, embeddings)
     elif abstract and not use_data:
@@ -127,7 +134,9 @@ def build_index(faiss_name, embeddings, path=None, abstract=False, origin_data=N
                             metadata = {"url": item["url"], "name": item["name"]}
                         else:
                             metadata = {"name": item["name"]}
-                        doc = Document(page_content=item["page_content"], metadata=metadata)
+                        doc = Document(
+                            page_content=item["page_content"], metadata=metadata
+                        )
                         all_docs.append(doc)
                 elif type(obj) is dict:
                     if "url" in obj:
@@ -141,11 +150,15 @@ def build_index(faiss_name, embeddings, path=None, abstract=False, origin_data=N
     elif not abstract and not use_data:
         loader = PyPDFDirectoryLoader(path)
         documents = loader.load()
-        text_splitter = SpacyTextSplitter(pipeline="zh_core_web_sm", chunk_size=1500, chunk_overlap=0)
+        text_splitter = SpacyTextSplitter(
+            pipeline="zh_core_web_sm", chunk_size=1500, chunk_overlap=0
+        )
         docs = text_splitter.split_documents(documents)
         docs_tackle = []
         for item in docs:
-            item.metadata["name"] = item.metadata["source"].split("/")[-1].replace(".pdf", "")
+            item.metadata["name"] = (
+                item.metadata["source"].split("/")[-1].replace(".pdf", "")
+            )
             item.metadata["url"] = item.metadata["source"]
             docs_tackle.append(item)
         db = FAISS.from_documents(docs_tackle, embeddings)
@@ -168,7 +181,13 @@ def write_to_file(filename: str, text: str) -> None:
 
 
 def md_to_pdf(input_file, output_file):
-    md2pdf(output_file, md_content=None, md_file_path=input_file, css_file_path=None, base_url=None)
+    md2pdf(
+        output_file,
+        md_content=None,
+        md_file_path=input_file,
+        css_file_path=None,
+        base_url=None,
+    )
 
 
 def write_md_to_pdf(task: str, path: str, text: str) -> str:
@@ -197,17 +216,25 @@ def add_citation(paragraphs, faiss_name, embeddings):
         shutil.rmtree(faiss_name)
     list_data = []
     for item in paragraphs:
-        example = Document(page_content=item["summary"], metadata={"url": item["url"], "name": item["name"]})
+        example = Document(
+            page_content=item["summary"],
+            metadata={"url": item["url"], "name": item["name"]},
+        )
         list_data.append(example)
     faiss_db = build_index(
-        faiss_name=faiss_name, use_data=True, embeddings=embeddings, origin_data=list_data
+        faiss_name=faiss_name,
+        use_data=True,
+        embeddings=embeddings,
+        origin_data=list_data,
     )
     faiss_search = FaissSearch(db=faiss_db, embeddings=embeddings)
     return faiss_search
 
 
 class JsonUtil:
-    def parse_json(self, json_str, start_indicator: str = "{", end_indicator: str = "}"):
+    def parse_json(
+        self, json_str, start_indicator: str = "{", end_indicator: str = "}"
+    ):
         start_idx = json_str.index(start_indicator)
         end_idx = json_str.rindex(end_indicator)
         corrected_data = json_str[start_idx : end_idx + 1]

@@ -2,9 +2,8 @@ import logging
 import string
 from typing import Dict, List, Optional
 
-from zhon import hanzi
-
 from erniebot_agent.tools.base import Tool
+from zhon import hanzi
 
 from .utils import write_md_to_pdf
 
@@ -48,7 +47,9 @@ class SemanticCitationTool(Tool):
             if not sentence:
                 continue
             try:
-                query_result = citation_faiss_research.search(query=sentence, top_k=3, filters=None)
+                query_result = citation_faiss_research.search(
+                    query=sentence, top_k=3, filters=None
+                )
             except Exception as e:
                 output_sent.append(sentence)
                 logger.error(f"Faiss search error: {e}")
@@ -70,7 +71,8 @@ class SemanticCitationTool(Tool):
                         index = self.recoder_cite_list.index(source) + 1
                         if (
                             len(output_sent) > 0
-                            and f"<sup>[\\[{index}\\]]({source})</sup>" in output_sent[-1]
+                            and f"<sup>[\\[{index}\\]]({source})</sup>"
+                            in output_sent[-1]
                         ):
                             output_sent[-1] = output_sent[-1].replace(
                                 f"<sup>[\\[{index}\\]]({source})</sup>", ""
@@ -98,7 +100,9 @@ class SemanticCitationTool(Tool):
                 output_text.append(chunk_text)
                 continue
             else:
-                output_sent = self.add_url_sentences(chunk_text, citation_faiss_research)
+                output_sent = self.add_url_sentences(
+                    chunk_text, citation_faiss_research
+                )
                 chunk_text = "".join(output_sent)
                 output_text.append(chunk_text)
         report = "\n\n".join(output_text)

@@ -3,15 +3,15 @@ from __future__ import annotations
 from functools import partial
 from typing import Any
 
-from langchain.chains.combine_documents import collapse_docs, split_list_of_docs
+from erniebot_agent.extensions.langchain.llms import ErnieBot
+from erniebot_agent.tools.base import Tool
+from langchain.chains.combine_documents import (collapse_docs,
+                                                split_list_of_docs)
 from langchain.prompts import PromptTemplate
 from langchain.schema import Document, StrOutputParser
 from langchain.schema.prompt_template import format_document
 from langchain.schema.runnable import RunnableParallel, RunnablePassthrough
 from langchain.text_splitter import SpacyTextSplitter
-
-from erniebot_agent.extensions.langchain.llms import ErnieBot
-from erniebot_agent.tools.base import Tool
 
 TOKEN_MAX_LENGTH = 4800
 
@@ -38,14 +38,21 @@ class TextSummarizationTool(Tool):
         )
         map_as_doc_chain = (
             RunnableParallel({"doc": RunnablePassthrough(), "content": map_chain})
-            | (lambda x: Document(page_content=x["content"], metadata=x["doc"].metadata))
+            | (
+                lambda x: Document(
+                    page_content=x["content"], metadata=x["doc"].metadata
+                )
+            )
         ).with_config(run_name="Summarize (return doc)")
 
         def format_docs(docs):
             return "\n\n".join(partial_format_document(doc) for doc in docs)
 
         collapse_chain: Any = (
-            {"context": format_docs} | PromptTemplate.from_template(prompt) | llm | StrOutputParser()
+            {"context": format_docs}
+            | PromptTemplate.from_template(prompt)
+            | llm
+            | StrOutputParser()
         )
 
         def get_num_tokens(docs):
@@ -92,7 +99,9 @@ class TextSummarizationTool(Tool):
                     metadata={},
                 )
             ]
-            text_splitter = SpacyTextSplitter(pipeline="zh_core_web_sm", chunk_size=1500, chunk_overlap=0)
+            text_splitter = SpacyTextSplitter(
+                pipeline="zh_core_web_sm", chunk_size=1500, chunk_overlap=0
+            )
             docs = text_splitter.split_documents(docs)
         else:
             docs = [

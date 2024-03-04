@@ -15,7 +15,9 @@ class UserProxyAgent:
     ):
         self.name = name
         self.system_message = (
-            system_message.content if system_message is not None else self.DEFAULT_SYSTEM_MESSAGE
+            system_message.content
+            if system_message is not None
+            else self.DEFAULT_SYSTEM_MESSAGE
         )
         self.human_input_mode = human_input_mode
 

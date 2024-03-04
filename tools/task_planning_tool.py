@@ -49,7 +49,9 @@ def generate_search_queries_with_context_comprehensive(context, question):
     你需要综合考虑上述信息，写出 4 个综合性搜索查询，以从以下内容形成客观意见： "{{question}}"
     您必须以以下格式回复一个中文字符串列表：["query 1", "query 2", "query 3", "query 4"]。
     """
-    prompt = PromptTemplate(context_comprehensive, input_variables=["context", "question"])
+    prompt = PromptTemplate(
+        context_comprehensive, input_variables=["context", "question"]
+    )
     return prompt.format(context=str(context), question=question)
 
 
@@ -72,10 +74,14 @@ class TaskPlanningTool(Tool, JsonUtil):
         elif not is_comprehensive:
             content = generate_search_queries_with_context(context, question)
         else:
-            content = generate_search_queries_with_context_comprehensive(context, question)
+            content = generate_search_queries_with_context_comprehensive(
+                context, question
+            )
         messages: List[Message] = [HumanMessage(content=content)]
         try:
-            response = await self.llm.chat(messages, system=agent_role_prompt, temperature=0.7)
+            response = await self.llm.chat(
+                messages, system=agent_role_prompt, temperature=0.7
+            )
             result = response.content
             plan = self.parse_json(result, "[", "]")
         except Exception as e:

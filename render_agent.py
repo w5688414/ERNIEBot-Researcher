@@ -2,14 +2,15 @@ import logging
 import time
 from typing import Optional
 
-from tools.utils import JsonUtil, ReportCallbackHandler, add_citation, write_md_to_pdf
-
 from erniebot_agent.agents.agent import Agent
 from erniebot_agent.agents.callback.callback_manager import CallbackManager
 from erniebot_agent.agents.schema import AgentResponse
 from erniebot_agent.chat_models.erniebot import BaseERNIEBot
 from erniebot_agent.memory import HumanMessage
 from erniebot_agent.prompt import PromptTemplate
+
+from tools.utils import (JsonUtil, ReportCallbackHandler, add_citation,
+                         write_md_to_pdf)
 
 logger = logging.getLogger(__name__)
 TOKEN_MAX_LENGTH = 4200
@@ -40,7 +41,9 @@ class RenderAgent(Agent, JsonUtil):
         self.citation = citation_tool
         self.faiss_name_citation = faiss_name_citation
         self.system_message = (
-            system_message.content if system_message is not None else self.DEFAULT_SYSTEM_MESSAGE
+            system_message.content
+            if system_message is not None
+            else self.DEFAULT_SYSTEM_MESSAGE
         )
         self.template_abstract = """
         请你总结报告并给出报告的摘要和关键词，摘要在100-200字之间，关键词不超过5个词。
@@ -134,9 +137,13 @@ class RenderAgent(Agent, JsonUtil):
         else:
             logging.error("Report format error, unable to add abstract and keywords")
             final_report = report
-        await self._callback_manager.on_tool_start(self, tool=self.citation, input_args=final_report)
+        await self._callback_manager.on_tool_start(
+            self, tool=self.citation, input_args=final_report
+        )
         if summarize is not None and meta_data is not None:
-            citation_search = add_citation(summarize, self.faiss_name_citation, self.embeddings)
+            citation_search = add_citation(
+                summarize, self.faiss_name_citation, self.embeddings
+            )
             final_report, path = await self.citation(
                 report=final_report,
                 meta_data=meta_data,
@@ -147,5 +154,7 @@ class RenderAgent(Agent, JsonUtil):
             )
         else:
             path = write_md_to_pdf(self.report_type, self.dir_path, final_report)
-        await self._callback_manager.on_tool_end(self, tool=self.citation, response={"report": final_report})
+        await self._callback_manager.on_tool_end(
+            self, tool=self.citation, response={"report": final_report}
+        )
         return final_report, path

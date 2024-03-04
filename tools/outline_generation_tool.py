@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import List
 
-from tools.utils import JsonUtil
-
 from erniebot_agent.chat_models.erniebot import BaseERNIEBot
 from erniebot_agent.memory import HumanMessage, Message
 from erniebot_agent.tools.base import Tool
+
+from tools.utils import JsonUtil
 
 
 class OutlineGenerationTool(Tool, JsonUtil):

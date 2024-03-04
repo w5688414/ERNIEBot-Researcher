@@ -32,7 +32,9 @@ def generate_report_prompt(question, research_summary, outline=None):
         您必须基于给定信息确定自己的明确和有效观点。不要得出一般和无意义的结论。
         在报告末尾以APA格式列出所有使用的来源URL。
         """
-        report_prompt = PromptTemplate(prompt, input_variables=["information", "question"])
+        report_prompt = PromptTemplate(
+            prompt, input_variables=["information", "question"]
+        )
         strs = report_prompt.format(information=research_summary, question=question)
     else:
         outline = outline.replace('"', "'")
@@ -50,8 +52,12 @@ def generate_report_prompt(question, research_summary, outline=None):
         您必须基于给定信息确定自己的明确和有效观点。不要得出一般和无意义的结论。
         在报告末尾以APA格式列出所有使用的来源URL。
         """
-        report_prompt = PromptTemplate(prompt, input_variables=["information", "outline", "question"])
-        strs = report_prompt.format(information=research_summary, outline=outline, question=question)
+        report_prompt = PromptTemplate(
+            prompt, input_variables=["information", "outline", "question"]
+        )
+        strs = report_prompt.format(
+            information=research_summary, outline=outline, question=question
+        )
     return strs.replace(". ", ".")
 
 
@@ -124,7 +130,9 @@ class ReportWritingTool(Tool):
     ):
         research_summary = research_summary[: TOKEN_MAX_LENGTH - 600]
         report_type_func = get_report_by_type(report_type)
-        messages: List[Message] = [HumanMessage(report_type_func(question, research_summary, outline))]
+        messages: List[Message] = [
+            HumanMessage(report_type_func(question, research_summary, outline))
+        ]
         response = await self.llm_long.chat(messages, system=agent_role_prompt)
         final_report = response.content
         if final_report == "":

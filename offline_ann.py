@@ -1,10 +1,10 @@
 from langchain.embeddings.openai import OpenAIEmbeddings
-from tools.utils import build_index, FaissSearch
 
+from tools.utils import FaissSearch, build_index
 
 if __name__ == "__main__":
     embeddings = OpenAIEmbeddings(deployment="text-embedding-ada")
-    
+
     db = build_index(
         "faiss_abstract_baidu_openai",
         embeddings=embeddings,

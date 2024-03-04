@@ -61,7 +61,9 @@ class TextRankingTool(Tool, JsonUtil):
                 while True:
                     try:
                         if len(content) <= TOKEN_MAX_LENGTH:
-                            response = await self.llm.chat(messages=messages, temperature=1e-10)
+                            response = await self.llm.chat(
+                                messages=messages, temperature=1e-10
+                            )
                         else:
                             response = await self.llm_long.chat(
                                 messages=messages,

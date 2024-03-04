@@ -1,11 +1,11 @@
 import logging
 from typing import List, Optional, Union
 
-from tools.utils import JsonUtil, ReportCallbackHandler
-
 from erniebot_agent.chat_models.erniebot import BaseERNIEBot
 from erniebot_agent.memory import HumanMessage, Message, SystemMessage
 from erniebot_agent.prompt import PromptTemplate
+
+from tools.utils import JsonUtil, ReportCallbackHandler
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,9 @@ class RankingAgent(JsonUtil):
     ) -> None:
         self.name = name
         self.system_message = (
-            system_message.content if system_message is not None else self.DEFAULT_SYSTEM_MESSAGE
+            system_message.content
+            if system_message is not None
+            else self.DEFAULT_SYSTEM_MESSAGE
         )
         self.llm = llm
         self.llm_long = llm_long
@@ -52,7 +54,9 @@ class RankingAgent(JsonUtil):
             self._callback_manager = callbacks
 
     async def run(self, list_reports: List[Union[str, dict]], query: str):
-        await self._callback_manager.on_run_start(agent=self, agent_name=self.name, prompt=query)
+        await self._callback_manager.on_run_start(
+            agent=self, agent_name=self.name, prompt=query
+        )
         agent_resp = await self._run(query=query, list_reports=list_reports)
         await self._callback_manager.on_run_end(agent=self, response=agent_resp)
         return agent_resp
@@ -76,7 +80,9 @@ class RankingAgent(JsonUtil):
             else:
                 reports = list_reports
         response = await self.ranking_tool(reports, query)
-        await self._callback_manager.on_tool_end(agent=self, tool=self.ranking_tool, response=response)
+        await self._callback_manager.on_tool_end(
+            agent=self, tool=self.ranking_tool, response=response
+        )
         return reports, response
 
     async def check_format(self, report: str):
@@ -88,7 +94,9 @@ class RankingAgent(JsonUtil):
                 if len(content) < TOKEN_MAX_LENGTH:
                     response = await self.llm.chat(messages=messages, temperature=0.001)
                 else:
-                    response = await self.llm_long.chat(messages=messages, temperature=0.001)
+                    response = await self.llm_long.chat(
+                        messages=messages, temperature=0.001
+                    )
                 result = response.content
                 logger.info(f"check report format result: {result}")
                 result_dict = self.parse_json(result)
@@ -97,9 +105,13 @@ class RankingAgent(JsonUtil):
                 elif result_dict["accept"] is False or result_dict["accept"] == "false":
                     return False
             except Exception as e:
-                await self._callback_manager.on_tool_error(self, tool=self.ranking_tool, error=e)
+                await self._callback_manager.on_tool_error(
+                    self, tool=self.ranking_tool, error=e
+                )
                 logger.error(e)
                 retry_count += 1
                 if retry_count > MAX_RETRY:
-                    raise Exception(f"Failed to check report format after {MAX_RETRY} times.")
+                    raise Exception(
+                        f"Failed to check report format after {MAX_RETRY} times."
+                    )
                 continue
