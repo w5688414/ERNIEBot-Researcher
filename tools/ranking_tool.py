@@ -11,7 +11,7 @@ from erniebot_agent.tools.base import Tool
 from .utils import JsonUtil
 
 logger = logging.getLogger(__name__)
-MAX_RETRY = 10
+MAX_RETRY = 5
 TOKEN_MAX_LENGTH = 4200
 
 
@@ -62,12 +62,15 @@ class TextRankingTool(Tool, JsonUtil):
                     try:
                         if len(content) <= TOKEN_MAX_LENGTH:
                             response = await self.llm.chat(
-                                messages=messages, temperature=1e-10
+                                messages=messages,
+                                temperature=1e-10,
+                                response_format="json_object",
                             )
                         else:
                             response = await self.llm_long.chat(
                                 messages=messages,
                                 temperature=1e-10,
+                                response_format="json_object",
                             )
                         result = response.content
                         result_dict = self.parse_json(result)

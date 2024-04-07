@@ -21,6 +21,7 @@ class ResearchTeam:
         polish_actor: Optional[PolishAgent] = None,
         user_agent: Optional[UserProxyAgent] = None,
         use_reflection: bool = False,
+        use_fact_checking: bool = False,
     ):
         self.research_actor_instance = research_actor
         self.editor_actor_instance = editor_actor
@@ -31,6 +32,7 @@ class ResearchTeam:
         self.user_agent = user_agent
         self.polish_actor = polish_actor
         self.use_reflection = use_reflection
+        self.use_fact_checking = use_fact_checking
 
     async def run(self, query, iterations=3):
         tasks_researchers = [
@@ -91,9 +93,12 @@ class ResearchTeam:
                 immedia_report = list_reports[0]
 
             revised_report = immedia_report
-        checked_report = await self.checker_actor_instance.run(
-            report=revised_report["report"]
-        )
+            
+        checked_report = revised_report["report"]
+        if self.use_fact_checking:
+            checked_report = await self.checker_actor_instance.run(
+                report=checked_report
+            )
         revised_report, path = await self.polish_actor_instance.run(
             report=checked_report,
             summarize=revised_report["paragraphs"],

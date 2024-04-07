@@ -2,5 +2,13 @@ gradio
 jsonlines
 langchain
 scikit-learn
+openai>=1.0.0
+langchain-openai
 markdown
 WeasyPrint==52.5
+llama_index
+flask-sqlalchemy
+spacy
+zhon
+unstructured[pdf]
+https://github.com/explosion/spacy-models/releases/download/zh_core_web_sm-3.7.0/zh_core_web_sm-3.7.0-py3-none-any.whl

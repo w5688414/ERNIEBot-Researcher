@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from erniebot_agent.chat_models.erniebot import BaseERNIEBot
 from erniebot_agent.memory import HumanMessage, Message, SystemMessage
@@ -53,7 +53,7 @@ class RankingAgent(JsonUtil):
         else:
             self._callback_manager = callbacks
 
-    async def run(self, list_reports: List[Union[str, dict]], query: str):
+    async def run(self, list_reports: List[Union[str, Dict]], query: str):
         await self._callback_manager.on_run_start(
             agent=self, agent_name=self.name, prompt=query
         )
