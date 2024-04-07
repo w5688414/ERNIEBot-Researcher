@@ -93,7 +93,7 @@ class ResearchTeam:
                 immedia_report = list_reports[0]
 
             revised_report = immedia_report
-            
+
         checked_report = revised_report["report"]
         if self.use_fact_checking:
             checked_report = await self.checker_actor_instance.run(

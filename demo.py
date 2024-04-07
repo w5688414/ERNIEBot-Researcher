@@ -256,7 +256,11 @@ def generate_report(query, history=[]):
         build_index_function,
         retrieval_tool,
     )
-    team_actor = ResearchTeam(**agent_sets, use_reflection=args.use_reflection, use_fact_checking=args.fact_checking)
+    team_actor = ResearchTeam(
+        **agent_sets,
+        use_reflection=args.use_reflection,
+        use_fact_checking=args.fact_checking,
+    )
     report, path = asyncio.run(team_actor.run(query, args.iterations))
     return report, path
 
