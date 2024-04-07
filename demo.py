@@ -29,30 +29,6 @@ from tools.utils import ReportCallbackHandler, setup_logging
 parser = argparse.ArgumentParser()
 parser.add_argument("--api_type", type=str, default="aistudio")
 
-parser.add_argument(
-    "--knowledge_base_name_full_text",
-    type=str,
-    default="",
-    help="The name of the full-text knowledge base(baizhong)",
-)
-parser.add_argument(
-    "--knowledge_base_name_abstract",
-    type=str,
-    default="",
-    help="The name of the abstract base(baizhong)",
-)
-parser.add_argument(
-    "--knowledge_base_id_full_text",
-    type=str,
-    default="",
-    help="The id of the full-text knowledge base(baizhong)",
-)
-parser.add_argument(
-    "--knowledge_base_id_abstract",
-    type=str,
-    default="",
-    help="The id of the abstract base(baizhong)",
-)
 
 parser.add_argument(
     "--index_name_full_text",

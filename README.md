@@ -139,13 +139,26 @@ python ./tools/preprocessing.py \
 
 > 第五步：运行
 
-Base版本示例运行：
-
 ```
 python demo.py --num_research_agent 1 \
                                 --index_name_full_text <your full text> \
                                 --index_name_abstract <your abstract text>
 ```
+- `index_name_full_text`: 全文知识库索引的路径
+- `index_name_abstract`: 摘要知识库索引的路径
+- `index_name_citation`: 参考文献的索引路径
+- `num_research_agent`: 生成报告的agent数量
+- `iterations`: 反思迭代的轮数
+- `report_type`: 报告的类型，目前支持research_report
+- `embedding_type`: 使用的向量类型，目前支持ernie_embedding和openai_embedding(azure)
+- `save_path`:报告保存的路径
+- `server_name`: webui的ip地址
+- `server_port`: webui的端口号
+- `log_path`: 日志的保存路径
+- `use_ui`: 是否使用webui
+- `use_reflection`: 是否使用反思过程
+- `fact_checking`:是否使用事实性校验过程
+- `framework`: 基于的框架，目前支持langchain
 
 ## Reference
 
