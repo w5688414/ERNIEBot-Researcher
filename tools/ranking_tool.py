@@ -8,7 +8,7 @@ from erniebot_agent.memory import HumanMessage, Message
 from erniebot_agent.prompt import PromptTemplate
 from erniebot_agent.tools.base import Tool
 
-from .utils import JsonUtil
+from tools.utils import JsonUtil
 
 logger = logging.getLogger(__name__)
 MAX_RETRY = 5

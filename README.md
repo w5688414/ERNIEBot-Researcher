@@ -6,6 +6,12 @@
     <img src="https://github.com/w5688414/ERNIEBot-Researcher/assets/12107462/d4f9100a-fa29-4912-9f7a-be151a7f5ee2" width="800px">
 </div>
 
+生成的报告下载地址：[报告下载](https://github.com/w5688414/ERNIEBot-Researcher/files/14901642/polish__research_report.pdf)
+
+<div align="center">
+    <img src="https://github.com/w5688414/ERNIEBot-Researcher/assets/12107462/6e7ee373-ae45-4bc4-b177-69fc6fc7dad1" width="500px">
+</div>
+
 ERNIEBot Researcher是一个自主智能体（Autonomous Agent），旨在对各种任务进行全面的在线研究。能够精心编撰内容详尽、真实可信且立场公正的中文研究报告，同时根据需求提供针对特定资源、结构化大纲以及宝贵经验教训的深度定制服务。汲取了近期备受瞩目的[Plan-and-Solve](https://arxiv.org/abs/2305.04091)技术的精髓，并结合当前流行的[RAG](https://arxiv.org/abs/2005.11401)技术的优势，ERNIEBot Researcher通过多Agent协作和高效并行处理机制，有效攻克了速度瓶颈、决策确定性及成果可靠性等难题。
 
 ### 为什么需要ERNIEBot Researcher？
