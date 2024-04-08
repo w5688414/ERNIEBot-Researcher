@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import hashlib
 import os
+import time
 
 import gradio as gr
 from erniebot_agent.chat_models import ERNIEBot
@@ -9,6 +10,7 @@ from erniebot_agent.extensions.langchain.embeddings import ErnieEmbeddings
 from erniebot_agent.memory import SystemMessage
 from langchain_openai import AzureOpenAIEmbeddings
 
+from chatgpt import ChatGPT
 from editor_actor_agent import EditorActorAgent
 from fact_check_agent import FactCheckerAgent
 from polish_agent import PolishAgent
@@ -61,6 +63,7 @@ parser.add_argument(
     default="research_report",
     help="['research_report','resource_report','outline_report']",
 )
+parser.add_argument("--chatbot", type=str, default="ernie", help="['ernie','chatgpt']")
 parser.add_argument(
     "--embedding_type",
     type=str,
@@ -68,7 +71,7 @@ parser.add_argument(
     help="['openai_embedding','ernie_embedding']",
 )
 parser.add_argument(
-    "--save_path", type=str, default="./output/erniebot", help="The report save path"
+    "--save_path", type=str, default="./output", help="The report save path"
 )
 parser.add_argument(
     "--server_name", type=str, default="0.0.0.0", help="the host of server"
@@ -236,12 +239,20 @@ def get_agents(
 
 
 def generate_report(query, history=[]):
-    dir_path = f"{args.save_path}/{hashlib.sha1(query.encode()).hexdigest()}"
+    dir_path = (
+        f"{args.save_path}/{args.chatbot}/{hashlib.sha1(query.encode()).hexdigest()}"
+    )
     os.makedirs(dir_path, exist_ok=True)
-    target_path = f"{args.save_path}/{hashlib.sha1(query.encode()).hexdigest()}/revised"
+    target_path = f"{args.save_path}/{args.chatbot}/{hashlib.sha1(query.encode()).hexdigest()}/revised"
     os.makedirs(target_path, exist_ok=True)
-    llm = ERNIEBot(model="ernie-4.0")
-    llm_long = ERNIEBot(model="ernie-longtext")
+    if args.chatbot == "ernie":
+        llm = ERNIEBot(model="ernie-4.0")
+        llm_long = ERNIEBot(model="ernie-longtext")
+    elif args.chatbot == "chatgpt":
+        llm = ChatGPT()
+        llm_long = ChatGPT()
+    else:
+        raise NotImplementedError("chatbot must be ernie or chatgpt")
 
     build_index_function, retrieval_tool = get_retriver_by_type(args.framework)
     retriever_sets = get_retrievers(build_index_function, retrieval_tool)
@@ -261,7 +272,10 @@ def generate_report(query, history=[]):
         use_reflection=args.use_reflection,
         use_fact_checking=args.fact_checking,
     )
+    start_time = time.time()
     report, path = asyncio.run(team_actor.run(query, args.iterations))
+    end_time = time.time()
+    print(f"Time Cost:{end_time-start_time} seconds.")
     return report, path
 
 

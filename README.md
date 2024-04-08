@@ -23,7 +23,7 @@ ERNIEBot Researcher是一个自主智能体（Autonomous Agent），旨在对各
 
 ## News and Updates
 
-+ 2024.04.04 发布ERNIEBot Researcher，基于ernie-4.0和ernie-longtext完成研究任务，支持OpenAI Embedding，ERNIE-Embedding。
++ 2024.04.04 发布ERNIEBot Researcher，支持erniebot和chatgpt完成研究任务，支持OpenAI Embedding，ERNIE-Embedding。
 
 
 ## 架构
@@ -155,6 +155,7 @@ python demo.py --num_research_agent 1 \
 - `index_name_citation`: 参考文献的索引路径
 - `num_research_agent`: 生成报告的agent数量
 - `iterations`: 反思迭代的轮数
+- `chatbot`: LLM的类型，目前支持erniebot和chatgpt
 - `report_type`: 报告的类型，目前支持research_report
 - `embedding_type`: 使用的向量类型，目前支持ernie_embedding和openai_embedding(azure)
 - `save_path`:报告保存的路径
