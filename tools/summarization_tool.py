@@ -3,7 +3,6 @@ from __future__ import annotations
 from functools import partial
 from typing import Any
 
-from erniebot_agent.extensions.langchain.llms import ErnieBot
 from erniebot_agent.tools.base import Tool
 from langchain.chains.combine_documents import (collapse_docs,
                                                 split_list_of_docs)
@@ -19,8 +18,10 @@ TOKEN_MAX_LENGTH = 4800
 class TextSummarizationTool(Tool):
     description: str = "text summarization tool"
 
+    def __init__(self, llm):
+        self.llm = llm
+
     def map_reduce(self, question: str = ""):
-        llm = ErnieBot()
         document_prompt = PromptTemplate.from_template("{page_content}")
         partial_format_document = partial(format_document, prompt=document_prompt)
         prompt = (
@@ -33,7 +34,7 @@ class TextSummarizationTool(Tool):
         map_chain: Any = (
             {"context": partial_format_document}
             | PromptTemplate.from_template(prompt)
-            | llm
+            | self.llm
             | StrOutputParser()
         )
         map_as_doc_chain = (
@@ -51,7 +52,7 @@ class TextSummarizationTool(Tool):
         collapse_chain: Any = (
             {"context": format_docs}
             | PromptTemplate.from_template(prompt)
-            | llm
+            | self.llm
             | StrOutputParser()
         )
 
@@ -77,7 +78,7 @@ class TextSummarizationTool(Tool):
             | PromptTemplate.from_template(
                 "请你基于提供的内容，合并这些总结，不要额外使用自己的知识库对内容进行胡编乱造，不可以胡说八道，数字和事实必须准确。:\n\n{context}"
             )
-            | llm
+            | self.llm
             | StrOutputParser()
         ).with_config(run_name="Reduce")
         map_reduce = (map_as_doc_chain.map() | collapse | reduce_chain).with_config(  # type: ignore

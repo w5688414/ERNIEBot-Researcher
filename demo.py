@@ -7,8 +7,9 @@ import time
 import gradio as gr
 from erniebot_agent.chat_models import ERNIEBot
 from erniebot_agent.extensions.langchain.embeddings import ErnieEmbeddings
+from erniebot_agent.extensions.langchain.llms import ErnieBot
 from erniebot_agent.memory import SystemMessage
-from langchain_openai import AzureOpenAIEmbeddings
+from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 
 from chatgpt import ChatGPT
 from editor_actor_agent import EditorActorAgent
@@ -141,12 +142,12 @@ def get_retrievers(build_index_function, retrieval_tool):
     }
 
 
-def get_tools(llm, llm_long):
+def get_tools(llm, llm_long, langchain_llm):
     intent_detection_tool = IntentDetectionTool(llm=llm)
     outline_generation_tool = OutlineGenerationTool(llm=llm)
     ranking_tool = TextRankingTool(llm=llm, llm_long=llm_long)
     report_writing_tool = ReportWritingTool(llm=llm, llm_long=llm_long)
-    summarization_tool = TextSummarizationTool()
+    summarization_tool = TextSummarizationTool(llm=langchain_llm)
     task_planning_tool = TaskPlanningTool(llm=llm)
     semantic_citation_tool = SemanticCitationTool()
 
@@ -248,15 +249,22 @@ def generate_report(query, history=[]):
     if args.chatbot == "ernie":
         llm = ERNIEBot(model="ernie-4.0")
         llm_long = ERNIEBot(model="ernie-longtext")
+        langchain_llm = ErnieBot(model="ernie-3.5")
     elif args.chatbot == "chatgpt":
         llm = ChatGPT()
         llm_long = ChatGPT()
+        langchain_llm = AzureChatOpenAI(
+            openai_api_version="2023-07-01-preview",
+            azure_deployment=os.environ.get(
+                "AZURE_OPENAI_DEPLOYMENT", "gpt-35-turbo-16k"
+            ),
+        )
     else:
         raise NotImplementedError("chatbot must be ernie or chatgpt")
 
     build_index_function, retrieval_tool = get_retriver_by_type(args.framework)
     retriever_sets = get_retrievers(build_index_function, retrieval_tool)
-    tool_sets = get_tools(llm, llm_long)
+    tool_sets = get_tools(llm, llm_long, langchain_llm)
     agent_sets = get_agents(
         retriever_sets,
         tool_sets,
