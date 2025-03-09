@@ -1,3 +1,7 @@
+<p align="left">
+    <a href="README_CH.md">中文</a>&nbsp ｜ &nbspEnglish&nbsp 
+</p>
+
 # ERNIEBot Researcher
 
 The web page shown in the figure below is used for topic research. Users can input keywords or natural language sentences. The backend searches for relevant content based on the given literature, and then uses the ERNIE to generate a research report.
