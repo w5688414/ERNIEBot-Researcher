@@ -1,6 +1,3 @@
-<p align="left">
-    <a href="README_CH.md">中文</a>&nbsp ｜ &nbspEnglish&nbsp 
-</p>
 # ERNIEBot Researcher
 
 选题调研的Web所下图所示，用户输入关键词或者自然的语句，后台根据给定的文献进行搜索相关内容，然后使用文心大模型生成研究报告。
